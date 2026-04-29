@@ -58,14 +58,14 @@ def task1_report(group_param=None, subject_param=None):
     rows = cur.fetchall()
     
     print()
-    print('=' * 70)
+    print('=' * 80)
     print('  ОТЧЁТ: СРЕДНИЙ БАЛЛ ПО ГРУППАМ И ДИСЦИПЛИНАМ')
-    print('=' * 70)
+    print('=' * 80)
     if group_param:
         print(f'  Группа: {group_param}')
     if subject_param:
         print(f'  Дисциплина: {subject_param}')
-    print('-' * 70)
+    print('-' * 80)
     
     if not rows:
         print("  Данные не найдены")
@@ -73,8 +73,8 @@ def task1_report(group_param=None, subject_param=None):
         conn.close()
         return
     
-    col_widths = [4, 12, 22, 10, 6]
-    headers = ['№', 'Группа', 'Дисциплина', 'Ср.балл', 'Оц']
+    col_widths = [4, 14, 28, 10, 8]
+    headers = ['№', 'Группа', 'Дисциплина', 'Ср.балл', 'Оценок']
     
     print_header(col_widths, headers)
     
@@ -90,7 +90,7 @@ def task1_report(group_param=None, subject_param=None):
         if current_group != group:
             if current_group is not None:
                 avg_total = group_total / group_count if group_count > 0 else 0
-                print_row(['', current_group[:10], 'ИТОГО:', f'{avg_total:.2f}', str(int(group_total))], col_widths)
+                print_row(['', current_group[:12], 'ИТОГО:', f'{avg_total:.2f}', str(int(group_total))], col_widths)
                 print('├' + '┼'.join('─' * (w + 2) for w in col_widths) + '┤')
                 row_num = 1
             
@@ -100,8 +100,8 @@ def task1_report(group_param=None, subject_param=None):
             first_in_group = True
         
         group_display = group if first_in_group else ''
-        subject_short = subject[:20] + '..' if len(subject) > 20 else subject
-        print_row([row_num if first_in_group else '', group_display[:10], subject_short, f'{avg_grade:.2f}', str(int(count))], col_widths)
+        subject_short = subject[:26] + '..' if len(subject) > 26 else subject
+        print_row([row_num if first_in_group else '', group_display[:12], subject_short, f'{avg_grade:.2f}', str(int(count))], col_widths)
         
         group_total += avg_grade * count
         group_count += count
@@ -112,7 +112,7 @@ def task1_report(group_param=None, subject_param=None):
     
     if current_group is not None:
         avg_total = group_total / group_count if group_count > 0 else 0
-        print_row(['', current_group[:10], 'ИТОГО:', f'{avg_total:.2f}', str(int(group_total))], col_widths)
+        print_row(['', current_group[:12], 'ИТОГО:', f'{avg_total:.2f}', str(int(group_total))], col_widths)
         print('├' + '┼'.join('─' * (w + 2) for w in col_widths) + '┤')
     
     if grand_count > 0:
@@ -140,10 +140,8 @@ def task2_pivot_table(group_param=None):
     cur.execute(sql, (group_pattern, group_pattern))
     rows = cur.fetchall()
     
-    # Фиксированный список дисциплин для всех групп
     fixed_subjects = ['Web-дизайн', 'Базы данных', 'Бухучет', 'Высшая математика', 'Информатика', 'Английский язык']
     
-    # Собираем данные
     data = {}
     groups_set = set()
     
@@ -155,7 +153,6 @@ def task2_pivot_table(group_param=None):
     
     groups = sorted(groups_set)
     
-    # Сокращённые названия
     short_names = {
         'Web-дизайн': 'Web',
         'Базы данных': 'БД',
