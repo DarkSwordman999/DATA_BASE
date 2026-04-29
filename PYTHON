@@ -12,19 +12,22 @@ show_help() {
     echo "Использование:"
     echo "  ./PYTHON task1 [группа] [дисциплина]"
     echo "  ./PYTHON task2 [группа]"
-    echo "  ./PYTHON task3"
-    echo "  ./PYTHON task4 [группа]"
+    echo "  ./PYTHON task3 [--save] [--force]"
+    echo "  ./PYTHON task4 [группа] [--save] [--force]"
+    echo "  ./PYTHON save-all [--force]"
     echo "  ./PYTHON all"
     echo ""
     echo "Примеры:"
     echo "  ./PYTHON task1"
     echo "  ./PYTHON task1 ИНФ-101"
-    echo "  ./PYTHON task1 ИНФ-101 Программирование"
     echo "  ./PYTHON task2"
     echo "  ./PYTHON task2 ИНФ"
     echo "  ./PYTHON task3"
+    echo "  ./PYTHON task3 --save"
     echo "  ./PYTHON task4"
-    echo "  ./PYTHON task4 ИНФ"
+    echo "  ./PYTHON task4 ИНФ --save"
+    echo "  ./PYTHON save-all"
+    echo "  ./PYTHON save-all --force"
     echo "  ./PYTHON all"
 }
 
@@ -46,13 +49,30 @@ case "$1" in
         fi
         ;;
     task3)
-        python3 lab8_chart.py task3
+        if [[ "$2" == "--save" ]] || [[ "$2" == "--force" ]]; then
+            python3 lab8_chart.py task3 "$2"
+        elif [[ "$3" == "--save" ]] || [[ "$3" == "--force" ]]; then
+            python3 lab8_chart.py task3 "$2" "$3"
+        else
+            python3 lab8_chart.py task3
+        fi
         ;;
     task4)
-        if [ -z "$2" ]; then
+        if [[ "$2" == "--save" ]] || [[ "$2" == "--force" ]]; then
+            python3 lab8_chart.py task4 "$2"
+        elif [[ "$3" == "--save" ]] || [[ "$3" == "--force" ]]; then
+            python3 lab8_chart.py task4 "$2" "$3"
+        elif [ -z "$2" ]; then
             python3 lab8_chart.py task4
         else
             python3 lab8_chart.py task4 "$2"
+        fi
+        ;;
+    save-all)
+        if [[ "$2" == "--force" ]]; then
+            python3 lab8_chart.py save-all --force
+        else
+            python3 lab8_chart.py save-all
         fi
         ;;
     all)
