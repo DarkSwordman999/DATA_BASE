@@ -1,0 +1,88 @@
+#!/bin/bash
+
+# =============================================
+# ЛАБОРАТОРНАЯ РАБОТА №8 - ЗАПУСК ОТЧЁТОВ
+# =============================================
+
+show_help() {
+    echo "============================================="
+    echo "  ЛАБОРАТОРНАЯ РАБОТА №8 - ВУЗ"
+    echo "============================================="
+    echo ""
+    echo "Использование:"
+    echo "  ./PYTHON task1 [группа] [дисциплина]"
+    echo "  ./PYTHON task2 [группа]"
+    echo "  ./PYTHON task3"
+    echo "  ./PYTHON task4 [группа]"
+    echo "  ./PYTHON all"
+    echo ""
+    echo "Примеры:"
+    echo "  ./PYTHON task1"
+    echo "  ./PYTHON task1 ИНФ-101"
+    echo "  ./PYTHON task1 ИНФ-101 Программирование"
+    echo "  ./PYTHON task2"
+    echo "  ./PYTHON task2 ИНФ"
+    echo "  ./PYTHON task3"
+    echo "  ./PYTHON task4"
+    echo "  ./PYTHON task4 ИНФ"
+    echo "  ./PYTHON all"
+}
+
+case "$1" in
+    task1)
+        if [ -z "$2" ]; then
+            python3 lab8_report_fixed.py task1
+        elif [ -z "$3" ]; then
+            python3 lab8_report_fixed.py task1 "$2"
+        else
+            python3 lab8_report_fixed.py task1 "$2" "$3"
+        fi
+        ;;
+    task2)
+        if [ -z "$2" ]; then
+            python3 lab8_report_fixed.py task2
+        else
+            python3 lab8_report_fixed.py task2 "$2"
+        fi
+        ;;
+    task3)
+        python3 lab8_chart.py task3
+        ;;
+    task4)
+        if [ -z "$2" ]; then
+            python3 lab8_chart.py task4
+        else
+            python3 lab8_chart.py task4 "$2"
+        fi
+        ;;
+    all)
+        echo ""
+        echo "============================================="
+        echo "  ЗАДАЧА 1: ОТЧЁТ ПО ГРУППАМ И ДИСЦИПЛИНАМ"
+        echo "============================================="
+        python3 lab8_report_fixed.py task1
+        
+        echo ""
+        echo "============================================="
+        echo "  ЗАДАЧА 2: СВОДНАЯ ТАБЛИЦА"
+        echo "============================================="
+        python3 lab8_report_fixed.py task2
+        
+        echo ""
+        echo "============================================="
+        echo "  ЗАДАЧА 3: ГРАФИК ДИНАМИКИ"
+        echo "============================================="
+        echo "  График откроется в новом окне"
+        python3 lab8_chart.py task3
+        
+        echo ""
+        echo "============================================="
+        echo "  ЗАДАЧА 4: КРУГОВАЯ ДИАГРАММА"
+        echo "============================================="
+        echo "  Диаграмма откроется в новом окне"
+        python3 lab8_chart.py task4
+        ;;
+    *)
+        show_help
+        ;;
+esac
