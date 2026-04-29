@@ -402,3 +402,205 @@ LIMIT 20;
 ./h 117   # задача 4.3 лучшие студенты
 ./h 199   # выполнить все задачи лабораторной 6
 ```
+## Функции пользователя (PL/pgSQL)
+
+### Задача 1: Распределение студентов по среднему баллу (один признак)
+
+**Постановка:** Требуется определить студентов, чей средний балл по всем дисциплинам выше заданного порогового значения.
+
+**Используемые таблицы и поля:** СТУДЕНТЫ (код, фамилия, имя), УСПЕВАЕМОСТЬ (студент, оценка)
+
+**Результат:** таблица с колонками: студент_код, фамилия, имя, средний_балл, количество_оценок
+
+**Функции:**
+
+#### Функция 1: `get_student_avg_grade(INT)`
+- **Тип:** скалярная (возвращает одно значение)
+- **Аргумент:** код студента
+- **Возвращает:** средний балл студента (NUMERIC)
+
+```sql
+CREATE OR REPLACE FUNCTION get_student_avg_grade(p_student_code INT)
+RETURNS NUMERIC(3,2) AS $$
+BEGIN
+    RETURN (
+        SELECT ROUND(AVG(оценка), 2)
+        FROM УСПЕВАЕМОСТЬ
+        WHERE студент = p_student_code
+    );
+END;
+$$ LANGUAGE PLpgSQL;
+```
+#### Функция 2: `students_above_grade(NUMERIC)`
+- **Тип:** табличная (SETOF)
+- **Аргумент:** минимальный средний балл (по умолчанию 4.0)
+- **Возвращает:** таблицу студентов
+
+```sql
+CREATE OR REPLACE FUNCTION students_above_grade(p_min_grade NUMERIC DEFAULT 4.0)
+RETURNS TABLE(
+    студент_код INT,
+    фамилия VARCHAR,
+    имя VARCHAR,
+    средний_балл NUMERIC(3,2),
+    количество_оценок BIGINT
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        СТ.код,
+        СТ.фамилия,
+        СТ.имя,
+        get_student_avg_grade(СТ.код),
+        (SELECT COUNT(*) FROM УСПЕВАЕМОСТЬ WHERE студент = СТ.код)
+    FROM СТУДЕНТЫ СТ
+    WHERE get_student_avg_grade(СТ.код) >= p_min_grade
+    ORDER BY средний_балл DESC;
+END;
+$$ LANGUAGE PLpgSQL;
+```
+## Результат выполнения:
+
+         факультет         | сезон | средний_балл | количество_оценок 
+---------------------------+-------+--------------+-------------------
+ Дизайна                   | зима  |         4.18 |                22
+ Дизайна                   | весна |         4.29 |                 7
+ Дизайна                   | лето  |         3.86 |                14
+ Дизайна                   | осень |         3.60 |                15
+ Информационных технологий | зима  |         4.12 |               117
+ Информационных технологий | весна |         3.90 |                94
+ Информационных технологий | лето  |         4.00 |               102
+ Информационных технологий | осень |         3.74 |                91
+
+### Задача 3: Сводная таблица (группы × дисциплины)
+#### Функция 1 `get_avg_grade_for_pair(VARCHAR, VARCHAR)`
+
+```sql
+CREATE OR REPLACE FUNCTION get_avg_grade_for_pair(
+    p_group_name VARCHAR,
+    p_subject_name VARCHAR
+) RETURNS NUMERIC(3,2) AS $$
+BEGIN
+    RETURN (
+        SELECT ROUND(AVG(У.оценка), 2)
+        FROM УСПЕВАЕМОСТЬ У
+        JOIN ГРУППЫ Г ON Г.код = У.группа
+        JOIN ДИСЦИПЛИНЫ Д ON Д.код = У.дисциплина
+        WHERE Г.название = p_group_name 
+          AND Д.название = p_subject_name
+    );
+END;
+$$ LANGUAGE PLpgSQL;
+```
+#### Функция 2: `get_all_groups()`
+
+```sql
+CREATE OR REPLACE FUNCTION get_all_groups()
+RETURNS TABLE(name VARCHAR) AS $$
+BEGIN
+    RETURN QUERY SELECT название FROM ГРУППЫ ORDER BY название;
+END;
+$$ LANGUAGE PLpgSQL;
+```
+
+#### Функция 3: `get_all_subjects()`
+
+```sql
+CREATE OR REPLACE FUNCTION get_all_subjects()
+RETURNS TABLE(name VARCHAR) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT unnest(ARRAY[
+        'Рисунок'::VARCHAR,
+        'Живопись'::VARCHAR,
+        'Композиция'::VARCHAR,
+        'Дизайн'::VARCHAR,
+        'Web-дизайн'::VARCHAR,
+        'Базы данных'::VARCHAR,
+        'Высшая математика'::VARCHAR,
+        'Физика'::VARCHAR
+    ]);
+END;
+$$ LANGUAGE PLpgSQL;
+```
+#### Функция 4: `build_pivot_table()`
+
+```sql
+CREATE OR REPLACE FUNCTION build_pivot_table()
+RETURNS TABLE(group_name VARCHAR, pivot_data JSONB) AS $$
+DECLARE
+    v_group_name VARCHAR;
+    v_subject_name VARCHAR;
+    v_result JSONB := '{}'::JSONB;
+BEGIN
+    FOR v_group_name IN SELECT name FROM get_all_groups() LOOP
+        v_result := '{}'::JSONB;
+        FOR v_subject_name IN SELECT name FROM get_all_subjects() LOOP
+            v_result := v_result || jsonb_build_object(
+                v_subject_name,
+                COALESCE(get_avg_grade_for_pair(v_group_name, v_subject_name), 0)
+            );
+        END LOOP;
+        RETURN QUERY SELECT v_group_name, v_result;
+    END LOOP;
+END;
+$$ LANGUAGE PLpgSQL;
+```
+#### Функция 5: `display_pivot_table()`
+
+```sql
+CREATE OR REPLACE FUNCTION display_pivot_table()
+RETURNS TABLE(
+    группа VARCHAR,
+    "Рисунок" TEXT,
+    "Живопись" TEXT,
+    "Композиция" TEXT,
+    "Дизайн" TEXT,
+    "Web-дизайн" TEXT,
+    "Базы данных" TEXT,
+    "Высшая математика" TEXT,
+    "Физика" TEXT
+) AS $$
+DECLARE
+    v_row RECORD;
+BEGIN
+    FOR v_row IN SELECT * FROM build_pivot_table() LOOP
+        RETURN QUERY SELECT 
+            v_row.group_name,
+            (v_row.pivot_data->>'Рисунок')::TEXT,
+            (v_row.pivot_data->>'Живопись')::TEXT,
+            (v_row.pivot_data->>'Композиция')::TEXT,
+            (v_row.pivot_data->>'Дизайн')::TEXT,
+            (v_row.pivot_data->>'Web-дизайн')::TEXT,
+            (v_row.pivot_data->>'Базы данных')::TEXT,
+            (v_row.pivot_data->>'Высшая математика')::TEXT,
+            (v_row.pivot_data->>'Физика')::TEXT;
+    END LOOP;
+END;
+$$ LANGUAGE PLpgSQL;
+```
+## Результат выполнения:
+
+ группа  | Рисунок | Живопись | Композиция | Дизайн | Web-дизайн | Базы данных | Высшая математика | Физика 
+---------+---------+----------+------------+--------+------------+-------------+-------------------+--------
+ ЭК-101  | 4.00    | 4.67     | 3.85       | 4.33   | 4.20       | 3.63        | 4.33              | 3.20
+ ЭК-102  | 3.92    | 4.00     | 4.13       | 3.71   | 5.00       | 4.00        | 4.40              | 3.60
+ ЭК-201  | 3.75    | 4.33     | 3.86       | 4.00   | 4.00       | 4.33        | 4.50              | 4.00
+ ДИЗ-101 | 4.00    | 4.71     | 3.83       | 3.50   | 4.50       | 4.20        | 0                 | 4.00
+ ИНФ-101 | 4.00    | 4.60     | 3.83       | 0      | 3.67       | 4.50        | 4.20              | 4.00
+ ПРА-101 | 3.50    | 4.50     | 3.90       | 3.20   | 4.00       | 3.75        | 3.33              | 3.80
+ ИНФ-102 | 3.67    | 4.40     | 3.57       | 3.50   | 4.00       | 3.73        | 3.86              | 3.50
+ ИНФ-201 | 3.75    | 4.67     | 3.86       | 4.43   | 4.00       | 4.14        | 4.20              | 3.83
+ ПРА-201 | 3.25    | 4.09     | 3.75       | 4.00   | 4.00       | 4.20        | 4.67              | 4.00
+ ИНФ-202 | 3.70    | 4.30     | 4.00       | 4.00   | 3.50       | 4.00        | 4.25              | 3.83
+(10 строк)
+
+### Команды для функций:
+```bash
+./h 200   # создать все функции
+./h 201 4.5   # студенты со средним баллом выше 4.5
+./h 202   # средний балл по факультетам и сезонам
+./h 203   # сводная таблица
+./h 204   # выполнить всё
+```
+
