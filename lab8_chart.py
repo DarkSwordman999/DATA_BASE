@@ -13,7 +13,7 @@ DB_CONFIG = {
     'host': 'localhost'
 }
 
-def task3_chart():
+def task3_chart(save_img=False):
     """Задача 3: Графики количества оценок и среднего балла"""
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
@@ -42,16 +42,13 @@ def task3_chart():
     counts = [row[1] for row in rows]
     avg_grades = [row[2] for row in rows]
     
-    # Создание графика
     fig, ax1 = plt.subplots(figsize=(12, 5))
     
-    # График количества оценок (левая ось)
     ax1.set_xlabel('Дата')
     ax1.set_ylabel('Количество оценок', color='blue')
     ax1.plot(months, counts, color='blue', marker='o', linewidth=2, label='Количество')
     ax1.tick_params(axis='y', labelcolor='blue')
     
-    # График среднего балла (правая ось)
     ax2 = ax1.twinx()
     ax2.set_ylabel('Средний балл', color='red')
     ax2.plot(months, avg_grades, color='red', marker='s', linewidth=2, label='Средний балл')
@@ -60,9 +57,14 @@ def task3_chart():
     plt.title('Динамика успеваемости по месяцам')
     plt.xticks(rotation=45, ha='right')
     fig.tight_layout()
+    
+    if save_img:
+        plt.savefig('docs/task3_chart.png', dpi=150, bbox_inches='tight')
+        print("График сохранён в docs/task3_chart.png")
+    
     plt.show()
 
-def task4_chart(group_param=None):
+def task4_chart(group_param=None, save_img=False):
     """Задача 4: Круговая диаграмма распределения по группам"""
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
@@ -77,6 +79,7 @@ def task4_chart(group_param=None):
         ORDER BY COUNT(*) DESC
         """
         cur.execute(sql, (f"%{group_param}%",))
+        filename = f'docs/task4_chart_{group_param}.png'
     else:
         sql = """
         SELECT ГР.название, COUNT(*) 
@@ -86,6 +89,7 @@ def task4_chart(group_param=None):
         ORDER BY COUNT(*) DESC
         """
         cur.execute(sql)
+        filename = 'docs/task4_chart.png'
     
     rows = cur.fetchall()
     cur.close()
@@ -105,19 +109,29 @@ def task4_chart(group_param=None):
         title += f'\n(фильтр: {group_param})'
     plt.title(title)
     plt.axis('equal')
+    
+    if save_img:
+        plt.savefig(filename, dpi=150, bbox_inches='tight')
+        print(f"Диаграмма сохранена в {filename}")
+    
     plt.show()
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Использование:")
-        print("  python lab8_chart.py task3")
-        print("  python lab8_chart.py task4 [группа]")
+        print("  python lab8_chart.py task3 [--save]")
+        print("  python lab8_chart.py task4 [группа] [--save]")
         sys.exit(0)
     
+    save = '--save' in sys.argv
+    
     if sys.argv[1] == "task3":
-        task3_chart()
+        task3_chart(save)
     elif sys.argv[1] == "task4":
-        group = sys.argv[2] if len(sys.argv) > 2 else None
-        task4_chart(group)
+        group = None
+        for arg in sys.argv[2:]:
+            if arg != '--save':
+                group = arg
+        task4_chart(group, save)
     else:
         print("Неизвестная команда")
