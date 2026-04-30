@@ -10,70 +10,63 @@ show_help() {
     echo "  ЛАБОРАТОРНАЯ РАБОТА №8 - ВУЗ"
     echo "============================================="
     echo ""
-    echo "КОМАНДЫ:"
-    echo "  ./PYTHON 1 [группа] [дисциплина]   - отчёт по группам и дисциплинам"
-    echo "  ./PYTHON 2 [группа]                - сводная таблица"
-    echo "  ./PYTHON 3                         - график динамики"
-    echo "  ./PYTHON 4 [группа]                - круговая диаграмма"
-    echo "  ./PYTHON all                       - выполнить всё"
-    echo "  ./PYTHON save                      - сохранить все графики"
-    echo "  ./PYTHON save --force              - сохранить с перезаписью"
+    echo "ОПИСАНИЕ КОМАНД:"
+    echo "  ./PYTHON task1                                - отчёт по всем группам и дисциплинам"
+    echo "  ./PYTHON task1 ИНФ-101                       - отчёт по конкретной группе"
+    echo "  ./PYTHON task1 ИНФ-101 Программирование      - отчёт по группе и дисциплине"
+    echo "  ./PYTHON task2                               - сводная таблица (группы × дисциплины)"
+    echo "  ./PYTHON task2 ИНФ                           - сводная таблица с фильтром"
+    echo "  ./PYTHON task3                               - график динамики успеваемости"
+    echo "  ./PYTHON task4                               - круговая диаграмма"
+    echo "  ./PYTHON task4 ИНФ                           - круговая диаграмма с фильтром"
+    echo "  ./PYTHON all                                 - выполнить все задачи"
+    echo "  ./PYTHON save                                - сохранить все графики"
+    echo "  ./PYTHON save --force                        - сохранить с перезаписью"
     echo ""
     echo "ПРИМЕРЫ:"
-    echo "  ./PYTHON 1"
-    echo "  ./PYTHON 1 ИНФ-101"
-    echo "  ./PYTHON 1 ИНФ-101 Программирование"
-    echo "  ./PYTHON 2"
-    echo "  ./PYTHON 2 ИНФ"
-    echo "  ./PYTHON 3"
-    echo "  ./PYTHON 4"
-    echo "  ./PYTHON 4 ИНФ"
+    echo "  ./PYTHON task1"
+    echo "  ./PYTHON task1 ИНФ-101"
+    echo "  ./PYTHON task1 ИНФ-101 Программирование"
+    echo "  ./PYTHON task2"
+    echo "  ./PYTHON task2 ИНФ"
+    echo "  ./PYTHON task3"
+    echo "  ./PYTHON task4"
+    echo "  ./PYTHON task4 ИНФ"
     echo "  ./PYTHON save --force"
 }
 
 case "$1" in
-    1)
+    task1)
         if [ -z "$2" ]; then
-            echo " Отчёт по всем группам и дисциплинам..."
+            echo " Выполняется отчёт по всем группам..."
             python3 lab8_report_fixed.py task1
         elif [ -z "$3" ]; then
-            echo " Отчёт по группе: $2..."
+            echo " Выполняется отчёт по группе: $2..."
             python3 lab8_report_fixed.py task1 "$2"
         else
-            echo " Отчёт по группе: $2, дисциплина: $3..."
+            echo " Выполняется отчёт по группе: $2, дисциплина: $3..."
             python3 lab8_report_fixed.py task1 "$2" "$3"
         fi
         ;;
-    2)
+    task2)
         if [ -z "$2" ]; then
-            echo " Сводная таблица по всем группам..."
+            echo " Выполняется сводная таблица по всем группам..."
             python3 lab8_report_fixed.py task2
         else
-            echo " Сводная таблица по группам, содержащим: $2..."
+            echo " Выполняется сводная таблица по группам, содержащим: $2..."
             python3 lab8_report_fixed.py task2 "$2"
         fi
         ;;
-    3)
-        if [ "$2" = "--force" ]; then
-            echo " График динамики (перезапись)..."
-            python3 lab8_chart.py task3 --force
-        else
-            echo " График динамики..."
-            python3 lab8_chart.py task3
-        fi
+    task3)
+        echo " Построение графика динамики успеваемости..."
+        python3 lab8_chart.py task3
         ;;
-    4)
+    task4)
         if [ -z "$2" ]; then
-            echo " Круговая диаграмма по всем группам..."
+            echo " Построение круговой диаграммы по всем группам..."
             python3 lab8_chart.py task4
-        elif [ "$2" = "--force" ]; then
-            echo " Круговая диаграмма (перезапись)..."
-            python3 lab8_chart.py task4 --force
-        elif [ "$3" = "--force" ]; then
-            echo " Круговая диаграмма для групп, содержащих: $2 (перезапись)..."
-            python3 lab8_chart.py task4 "$2" --force
         else
-            echo " Круговая диаграмма для групп, содержащих: $2..."
+            echo " Построение круговой диаграммы для групп, содержащих: $2..."
             python3 lab8_chart.py task4 "$2"
         fi
         ;;
